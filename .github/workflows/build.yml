@@ -4,8 +4,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
   schedule:
-    - cron: '0 8 * * *'  # 9am London auto
-
+    - cron: '0 8 * * *'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,10 +15,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - run: pip install requests
       - run: python darts_model.py
       - run: |
           git config user.name "bot"
           git config user.email "bot@bot.com"
           git add darts/
-          git commit -m "auto build" || echo "no change"
+          git commit -m "auto build v2" || echo "no change"
           git push
