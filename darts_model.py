@@ -6,7 +6,6 @@ API_KEY = os.getenv("ODDS_API_KEY")
 os.makedirs("darts", exist_ok=True)
 
 def match_win_prob(p_leg, ft):
-    # Prob to win FT legs before opponent (negative binomial)
     prob = 0
     for k in range(ft):
         prob += comb(ft + k -1, k) * (p_leg**ft) * ((1-p_leg)**k)
@@ -32,10 +31,8 @@ def fetch_bet365():
         try:
             url = f"https://api.the-odds-api.com/v4/sports/{league}/odds/?apiKey={API_KEY}&regions=uk&markets=h2h,correct_score,totals,spreads&bookmakers=bet365&oddsFormat=decimal"
             r=requests.get(url,timeout=20)
-            print(f"{league} {r.status_code} left {r.headers.get('x-requests-remaining')}")
             if r.status_code==200 and r.json():
                 all_events.extend(r.json())
-                open(f"darts/bet365_raw_{league}.json","w").write(json.dumps(r.json(),indent=2))
         except Exception as e:
             print(e)
     return all_events if all_events else None
@@ -78,18 +75,16 @@ for m in matches:
     cs = cs_probs(m['p_leg'], m['ft'])
     badge = "<span class='badge live'>BET365 LIVE ✅</span>" if m.get('is_live') else "<span class='badge demo'>DEMO — Off Season</span>"
     html+=f"<div class='card'><b>{m['p1']} vs {m['p2']} — FT{m['ft']}</b> {badge}"
-
-    # 1 SAFETY - MATCH WINNER
     html+=f"<div class='section safe'><b>🛡️ SAFETY — Match Winner</b><table><tr><th>Player</th><th>True%</th><th>Fair</th><th>Bet365</th><th>EDGE</th></tr>"
-    # p1
-    for name, true_p in [(m['p1'], win_p), (m['p2'], 1-win_p)]:
+    bh = m.get('book_h2h', {})
+    vals = list(bh.values()) if bh else []
+    for idx, (name, true_p) in enumerate([(m['p1'], win_p), (m['p2'], 1-win_p)]):
         book = None
-        for k,v in m.get('book_h2h',{{}}).items():
+        for k,v in bh.items():
             if name.split()[0].lower() in k.lower() or name.lower() in k.lower():
                 book=v
-        if not book and m.get('book_h2h'): # fallback first 2
-            vals=list(m['book_h2h'].values())
-            book = vals[0] if name==m['p1'] else vals[1] if len(vals)>1 else None
+        if not book and vals:
+            book = vals[idx] if len(vals)>idx else None
         if book:
             fair=1/true_p if true_p>0 else 99
             edge=(true_p-(1/book))*100
@@ -97,15 +92,11 @@ for m in matches:
             safe_tag="🛡️ SAFE" if edge>2 else ""
             html+=f"<tr><td><b>{name}</b></td><td>{true_p*100:.1f}%</td><td>{fair:.2f}</td><td class='odds'>{book:.2f}</td><td class='{cls}'>{edge:+.1f}% {safe_tag}</td></tr>"
     html+="</table></div>"
-
-    # 2 SAFETY - TOTAL LEGS
     if m.get('book_total'):
         html+=f"<div class='section safe'><b>🛡️ SAFETY — Total Legs</b><table><tr><th>Market</th><th>Bet365</th><th>Note</th></tr>"
         for k,v in m['book_total'].items():
             html+=f"<tr><td>{k}</td><td class='odds'>{v:.2f}</td><td style='color:#8f8'>Lower risk than CS</td></tr>"
         html+="</table></div>"
-
-    # 3 BOMB - CORRECT SCORE
     html+=f"<div class='section bomb'><b>💣 BOMB — Correct Score</b><table><tr><th>Score</th><th>True%</th><th>Fair</th><th>Bet365</th><th>EDGE</th></tr>"
     rows=[]
     for sc,tp in cs.items():
