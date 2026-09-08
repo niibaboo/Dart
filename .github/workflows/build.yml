@@ -17,9 +17,10 @@ jobs:
           python-version: '3.11'
       - run: pip install requests
       - run: python darts_model.py
+      - run: python snooker_model.py
       - run: |
           git config user.name "bot"
           git config user.email "bot@bot.com"
-          git add darts/
-          git commit -m "auto build v2" || echo "no change"
+          git add darts/ snooker/
+          git commit -m "auto build darts+snooker" || echo "no change"
           git push
