@@ -1,26 +1,2 @@
-name: Build Dart Model
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
-  schedule:
-    - cron: '0 8 * * *'
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: pip install requests
-      - run: python darts_model.py
-      - run: python snooker_model.py
-      - run: |
-          git config user.name "bot"
-          git config user.email "bot@bot.com"
-          git add darts/ snooker/
-          git commit -m "auto build darts+snooker" || echo "no change"
-          git push
+- name: Run python snooker_model.py
+  run: python snooker_model.py
