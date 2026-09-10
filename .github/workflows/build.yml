@@ -1,2 +1,30 @@
-- name: Run python snooker_model.py
-  run: python snooker_model.py
+name: Build Dart Model
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install deps
+        run: pip install requests
+          
+      - name: Run Darts Model
+        run: python darts_model.py
+          
+      - name: Commit updated data
+        run: |
+          git config user.name "bot"
+          git config user.email "bot@github.com"
+          git add .
+          git diff --staged --quiet || git commit -m "Auto-update darts data"
+          git push
